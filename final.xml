@@ -1,0 +1,56 @@
+<!--Final Project For CS 4710: Artifical Intelligence -->
+<!--final.xml-->
+<!--Members: Youssef Errami (ye4pg), Yonathan Fisseha (yf2ey), Simranjit Bhatia (sk8wt), Rahul Tuladhar (rt4hc), Assad Aijazi (aga8cb) -->
+
+
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<Mission xmlns="http://ProjectMalmo.microsoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <About>
+    <Summary/>
+  </About>
+  <ServerSection>
+    <ServerInitialConditions>
+        <Time><StartTime>1</StartTime></Time>
+    </ServerInitialConditions>
+    <ServerHandlers>
+      <FlatWorldGenerator generatorString="3;7,220*1,5*3,2;3;,biome_1"/>
+      <DrawingDecorator>
+        <!-- coordinates for cuboid are inclusive -->
+        <DrawCuboid x1="-2" y1="46" z1="-2" x2="7" y2="300" z2="13" type="air" />            <!-- limits of our arena -->
+        <DrawCuboid x1="-2" y1="43" z1="-2" x2="7" y2="45" z2="13" type="water" />           <!-- lava floor -->
+        <DrawCuboid x1="1"  y1="44" z1="1"  x2="3" y2="45" z2="17" type="grass" />      <!-- floor of the arena -->
+        <DrawBlock x="4"  y="45" z="1" type="gold_ore" />    <!-- the starting marker -->
+        <DrawBlock x="4"  y="45" z="7" type="lit_redstone_ore" />     <!-- the destination marker -->
+        <DrawBlock x="-2"  y="47" z="-2" type="glowstone" />
+        <DrawBlock x="7"  y="47" z="-2" type="glowstone" />
+        <DrawBlock x="-2"  y="47" z="13" type="glowstone" />
+        <DrawBlock x="7"  y="47" z="13" type="glowstone" />
+        <DrawBlock x="-2"  y="49" z="-2" type="glowstone" />
+        <DrawBlock x="7"  y="49" z="-2" type="glowstone" />
+        <DrawBlock x="-2"  y="49" z="13" type="glowstone" />
+        <DrawBlock x="7"  y="49" z="13" type="glowstone" />
+      </DrawingDecorator>
+      <ServerQuitFromTimeUp timeLimitMs="20000"/>
+      <ServerQuitWhenAnyAgentFinishes/>
+    </ServerHandlers>
+  </ServerSection>
+  <AgentSection mode="Survival">
+    <Name>Rayys</Name>
+    <AgentStart>
+      <Placement x="4.5" y="46.0" z="1.5" pitch="30" yaw="0"/>
+    </AgentStart>
+    <AgentHandlers>
+      <DiscreteMovementCommands/>
+      <ObservationFromFullStats/>
+      <RewardForTouchingBlockType>
+        <Block reward="-100.0" type="water" behaviour="onceOnly"/>
+        <Block reward="100.0" type="lit_redstone_ore" behaviour="onceOnly"/>
+      </RewardForTouchingBlockType>
+      <RewardForSendingCommand reward="-1" />
+      <AgentQuitFromTouchingBlockType>
+          <Block type="water" />
+          <Block type="lit_redstone_ore" />
+      </AgentQuitFromTouchingBlockType>
+    </AgentHandlers>
+  </AgentSection>
+</Mission>
