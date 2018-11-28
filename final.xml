@@ -13,31 +13,22 @@
         <Time><StartTime>1</StartTime></Time>
     </ServerInitialConditions>
     <ServerHandlers>
-      <FlatWorldGenerator generatorString="3;7,220*1,5*3,2;3;,biome_1"/>
+      <FlatWorldGenerator generatorString="3;7,44*49,73,35:1,159:4,95:13,35:13,159:11,95:10,159:14,159:6,35:6,95:6;12;"/>
       <DrawingDecorator>
-        <!-- coordinates for cuboid are inclusive -->
-        <DrawCuboid x1="-2" y1="46" z1="-2" x2="7" y2="300" z2="13" type="air" />            <!-- limits of our arena -->
-        <DrawCuboid x1="-2" y1="43" z1="-2" x2="7" y2="45" z2="13" type="water" />           <!-- lava floor -->
-        <DrawCuboid x1="1"  y1="44" z1="1"  x2="3" y2="45" z2="17" type="grass" />      <!-- floor of the arena -->
-        <DrawBlock x="4"  y="45" z="1" type="gold_ore" />    <!-- the starting marker -->
-        <DrawBlock x="4"  y="45" z="7" type="lit_redstone_ore" />     <!-- the destination marker -->
-        <DrawBlock x="-2"  y="47" z="-2" type="glowstone" />
-        <DrawBlock x="7"  y="47" z="-2" type="glowstone" />
-        <DrawBlock x="-2"  y="47" z="13" type="glowstone" />
-        <DrawBlock x="7"  y="47" z="13" type="glowstone" />
-        <DrawBlock x="-2"  y="49" z="-2" type="glowstone" />
-        <DrawBlock x="7"  y="49" z="-2" type="glowstone" />
-        <DrawBlock x="-2"  y="49" z="13" type="glowstone" />
-        <DrawBlock x="7"  y="49" z="13" type="glowstone" />
+        <DrawCuboid x1="5"  y1="61" z1="5"  x2="10" y2="61" z2="10" type="dirt" />
+        <!-- <DrawCuboid x1="3"  y1="60" z1="3"  x2="12" y2="60" z2="12" type="dirt" />-->
+
+     <!-- floor of the arena -->
+
       </DrawingDecorator>
       <ServerQuitFromTimeUp timeLimitMs="20000"/>
       <ServerQuitWhenAnyAgentFinishes/>
     </ServerHandlers>
   </ServerSection>
-  <AgentSection mode="Survival">
+  <AgentSection mode="Creative">
     <Name>Rayys</Name>
     <AgentStart>
-      <Placement x="4.5" y="46.0" z="1.5" pitch="30" yaw="0"/>
+      <Placement x="0" y="56.0" z="0" pitch="30" yaw="0"/>
     </AgentStart>
     <AgentHandlers>
       <DiscreteMovementCommands/>
@@ -49,6 +40,8 @@
       <RewardForSendingCommand reward="-1" />
       <AgentQuitFromTouchingBlockType>
           <Block type="water" />
+          <Block type="ice" />
+
           <Block type="lit_redstone_ore" />
       </AgentQuitFromTouchingBlockType>
     </AgentHandlers>
