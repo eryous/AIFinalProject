@@ -13,8 +13,8 @@
         <Time><StartTime>1</StartTime></Time>
     </ServerInitialConditions>
     <ServerHandlers>
-      <FlatWorldGenerator generatorString="3;7,44*49,73,35:1,159:4,95:13,35:13,159:11,95:10,159:14,159:6,35:6,95:6;12;" forceReset="true"/>
-      <!-- <FlatWorldGenerator generatorString="3;7,44*49,73,35:1,159:4,95:13,35:13,159:11,95:10,159:14,159:6,35:6,95:6;12;"/> -->
+      <!-- <FlatWorldGenerator generatorString="3;7,44*49,73,35:1,159:4,95:13,35:13,159:11,95:10,159:14,159:6,35:6,95:6;12;" forceReset="true"/> -->
+      <FlatWorldGenerator generatorString="3;7,44*49,73,35:1,159:4,95:13,35:13,159:11,95:10,159:14,159:6,35:6,95:6;12;"/>
       <DrawingDecorator>
         <DrawCuboid x1="6"  y1="56" z1="0"  x2="10" y2="56" z2="5" type="grass" />
         <DrawCuboid x1="6"  y1="61" z1="5"  x2="10" y2="61" z2="10" type="grass" />
@@ -39,7 +39,7 @@
   <AgentSection mode="Creative">
     <Name>Rayys</Name>
     <AgentStart>
-      <Placement x="8.5" y="57.0" z="4.5" pitch="90" yaw="0"/>
+      <Placement x="8.5" y="57.0" z="1.5" pitch="90" yaw="0"/>
       <Inventory>
           <InventoryBlock slot="0" type="obsidian" quantity="10"/>
       </Inventory>
@@ -50,15 +50,15 @@
       <DiscreteMovementCommands/>
       <ObservationFromFullStats/>
       <RewardForTouchingBlockType>
-        <Block reward="-100.0" type="water" behaviour="onceOnly"/>
-        <Block reward="100.0" type="lit_redstone_ore" behaviour="onceOnly"/>
+        <Block reward="-100.0" type="ice" behaviour="onceOnly"/>
+        <Block reward="100.0" type="quartz_block" behaviour="onceOnly"/>
       </RewardForTouchingBlockType>
       <RewardForSendingCommand reward="-1" />
       <AgentQuitFromTouchingBlockType>
           <Block type="water" />
           <Block type="ice" />
           <!--Item type="painting"/-->
-          <Block type="lit_redstone_ore" />
+          <Block type="quartz_block" />
       </AgentQuitFromTouchingBlockType>
     </AgentHandlers>
   </AgentSection>

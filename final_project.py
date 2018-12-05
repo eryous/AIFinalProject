@@ -19,15 +19,18 @@ if sys.version_info[0] == 2:
 else:
     import tkinter as tk
 
+first_level_y = 56
+# second_level_y = 56 + 5 
 
 class TabQAgent(object):
     """Tabular Q-learning agent for discrete state/action spaces."""
 
     def __init__(self):
-        self.jumpH = 2
+        self.powerUps = [(6,first_level_y,1),(8,first_level_y,5),(9,first_level_y,4),(10,first_level_y,1),(9,first_level_y,3),(6,first_level_y,2),(8,first_level_y,4),(9,first_level_y,1)]
+        self.jumpH = 5
         self.epsilon = 0.05  # exploration rate
-        self.alpha = 0.2     # learning rate
-        self.gamma = 0.8  # reward discount factor
+        self.alpha = 0.4     # learning rate
+        self.gamma = 0.5  # reward discount factor
 
         self.logger = logging.getLogger(__name__)
         if False:  # True if you want to see more information
@@ -39,27 +42,87 @@ class TabQAgent(object):
         
 
 
-        self.actions = ["movenorth 1", "movesouth 1", "movewest 1", "moveeast 1", "use 1"]
+        self.actions = ["movenorth 1", "movesouth 1", "movewest 1", "moveeast 1", "teleport 1"]
         self.q_table = {}
-        self.q_table_ladders = {}
+        self.q_table_powerup = {}
         self.canvas = None
         self.root = None
+        self.count_height = 0
+        self.food = list()
+        
+    def generate_food_blocks(self, food_per_level, height_per_level, min_x, min_z, max_x , max_z, y_base_level, levels = 3):
+        max_x -= 2
+        max_z -= 2
+        min_z -= 2
+        min_x -= 2
 
+        start_per_level = []
+        start_per_level[0] = (min_x, max_x)
+        for level in range(1, levels):
+           start_per_level[level][0] = start_per_level[level-1][1]+1 
+           start_per_level[level][1] = start_per_level[level-1][1] + (max_x-min_x) 
+           
+        possible_foods = [] 
+        for level in range(levels):
+            foods_on_level = []
+            for x in range(start_per_level[level][0], start_per_level[level][1]):
+                for z in range(min_z, max_z):
+                    foods_on_level.append((x, z))
+                
+            possible_foods.append(foods_on_level)
+
+        for level in range(levels):
+            while len(possible_foods) < food_per_level: 
+
+                x_pos = random.choice(possible_foods)
+                z_pos = random.randint(min_z, max_z)
+                y_pos = (level * height_per_level[level]) + y_base_level 
+                
+                pos = (x_pos, y_pos, z_pos)
+                while pos in self.food:
+                    x_pos = random.randint(min_x, max_x)
+                    z_pos = random.randint(min_z, max_z)
+                    y_pos = (level * height_per_level[level]) + y_base_level 
+                
+
+
+                self.food.append(pos)
+
+
+            
+        
     ### Change q_table to reflect what we have learnt.
     # Inputs: reward - int, current_state - coordinate tuple, prev_state - coordinate tuple, prev_a - int
     # Output: updated q_table
-    def updateQTable(self, reward, current_state, prev_state, prev_a):
-        self.q_table[prev_state][prev_a] = self.alpha * (reward + (self.gamma * max(self.q_table[current_state]))) + (1-self.alpha) * (self.q_table[prev_state][prev_a])
+    def updateQTable_general(self, reward, current_state, prev_state, prev_a, table):
+        a = self.alpha
+        g = self.gamma
+        r = reward
+        curr_Q =  max(table[current_state])
+        prev_Q = table[prev_state][prev_a]
+        average_Q = a * (r + (g * curr_Q)) + (1-a) * prev_Q
+        print(average_Q)
+        table[prev_state][prev_a] = average_Q
         return
+    
+    def updateQTable(self, reward, current_state, prev_state, prev_a):
+        self.updateQTable_general(reward, current_state, prev_state,  prev_a, self.q_table)
+
+    def updatePowerUpTable(self, reward, current_state, prev_state, prev_a):
+        self.updateQTable_general(reward, current_state, prev_state,  prev_a, self.q_table_powerup)
+
     ### Change q_table to reflect what we have learnt upon reaching the terminal state.
     # Input: reward - int, prev_state - coordinate tuple, prev_a - int
     # Output: updated q_table
     def updateQTableFromTerminatingState(self, reward, prev_state, prev_a):
         if reward > 0:
             self.q_table[prev_state][prev_a] = 100
-        
+            self.q_table_powerup[prev_state][prev_a] = 50
         if reward <= -100:
             self.q_table[prev_state][prev_a] = -100
+            self.q_table_powerup[prev_state][prev_a] = -50
+
+        self.powerUps = [(6,first_level_y,1),(8,first_level_y,5),(9,first_level_y,4),(10,first_level_y,1),(9,first_level_y,3),(6,first_level_y,2),(8,first_level_y,4),(9,first_level_y,1)]
 
         return
 
@@ -76,61 +139,60 @@ class TabQAgent(object):
         self.logger.debug("State: %s (x = %.2f, z = %.2f)" % (current_s, float(obs[u'XPos']), float(obs[u'ZPos'])))
         if current_s not in self.q_table:
             self.q_table[current_s] = ([0] * len(self.actions))
+            self.q_table_powerup[current_s] = ([0] * len(self.actions))
 
         # update Q values
         if self.prev_s is not None and self.prev_a is not None:
             self.updateQTable(current_r, current_s, self.prev_s, self.prev_a)
 
         self.drawQ(curr_x=int(obs[u'XPos']), curr_y=int(obs[u'ZPos']))
+        
 
+        cur_pos = (int(obs[u'XPos']),int(obs[u'YPos'])-1,int(obs[u'ZPos']))
+        print("current position: ",cur_pos)
+        print("POwer ups: ",self.powerUps)
+        if cur_pos in self.powerUps:
+            self.powerUps.remove(cur_pos)
+        print("POwer ups: ",self.powerUps)
 
+            
 
         def moveRight(ah):
             ah.sendCommand("strafe 1")
-            time.sleep(0.05)
-
-
+            # time.sleep(0.1)
         def moveLeft(ah):
             ah.sendCommand("strafe -1")
-            time.sleep(0.05)
-
-
+            # time.sleep(0.1)
         def moveStraight(ah):
             ah.sendCommand("move 1")
-            time.sleep(0.05)
-
-
+            # time.sleep(0.1)
         def moveBack(ah):           
             ah.sendCommand("move -1")
-            time.sleep(0.05)
-
-        def build(ah,x,y,z):
-            # ah.sendCommand("jump 1")
-            ah.sendCommand("chat /tp Rayys %d %d %d"%(x,y+self.jumpH,z))
-            # time.sleep(0.01)
-            ah.sendCommand("use 1")
-            ah.sendCommand("use 1")
-            ah.sendCommand("use 1")
-            ah.sendCommand("use 1")
-            ah.sendCommand("use 1")
-            ah.sendCommand("use 1")
-            ah.sendCommand("use 1")
-            time.sleep(1)
+            # time.sleep(0.1)
+    
+        def teleport(ah,x,y,z):
+            # ah.sendCommand("move -1")
+            if x == 8.5 and z == 4.5:
+                ah.sendCommand("chat /tp Rayys %d %d %d"%(x,y+self.jumpH,z+1))
+                time.sleep(1)
+            else:
+                ah.sendCommand("chat /tp Rayys %d %d %d"%(10,57,6))#if not at the pillar position but still wants to jump, teleport to ice to kill itself
+                time.sleep(1)
 
 
         def legal(x, z):
             LegalMoves = []
             if z < 6:
                 LegalMoves.append("up")
+            if x == 8.5 and z == 4.5:
+                print('x:',x,'z:',z)
+                LegalMoves.append("teleport")
             if z > 1:
                 LegalMoves.append("down")
             if x < 10:
                 LegalMoves.append("left")
             if x > 6:
                 LegalMoves.append("right")
-            if x == 8.5 and z == 4.5:
-                print('x:',x,'z:',z)
-                LegalMoves.append("use")
             return LegalMoves
         p = current_s.split(":")
         xp = int(p[0])
@@ -140,7 +202,7 @@ class TabQAgent(object):
         self.logger.debug(legal)
         # print(legal)
         random_int = random.random()
-        # print(random_int)
+        # print(self.q_table)
 
 
         if random_int <= self.epsilon:
@@ -149,33 +211,35 @@ class TabQAgent(object):
 
             print(action)
             if action == "up": # up
-            
                 moveStraight(agent_host)
                 self.prev_a = 0
-                self.prev_s = current_s
             if action == 'down': # down
                 moveBack(agent_host)
                 self.prev_a = 1
-                self.prev_s = current_s 
             if action == 'left':# left
                 moveLeft(agent_host)
                 self.prev_a = 2
-                self.prev_s = current_s 
             if action == 'right': #right
                 moveRight(agent_host)
                 self.prev_a = 3
-                self.prev_s = current_s  
-            if action == 'use':
-                build(agent_host,obs["XPos"],obs["YPos"],obs["ZPos"])
+            if action == 'teleport':
+                print("random jump", obs["XPos"],obs["YPos"],obs["ZPos"])
+                teleport(agent_host,obs["XPos"],obs["YPos"],obs["ZPos"])
                 self.prev_a = 4
-                self.prev_s = current_s  
-        
+            self.prev_s = current_s
         else:
-            valC = max(self.q_table[current_s])
+            print(self.q_table[current_s])
+                
+            sorted_spots = sorted(self.q_table[current_s])
+            valC = sorted_spots[-1]
+
             spots = []
             for i in range(len(self.q_table[current_s])):
-                if(self.q_table[current_s][i]==valC):
+                if (self.q_table[current_s][i]==valC):
                     spots.append(i)
+
+
+            print(spots)
             
             randomMove = random.choice(spots)
             print('random move',randomMove)
@@ -192,8 +256,8 @@ class TabQAgent(object):
             if randomMove == 3: #right
                 moveRight(agent_host)
                 self.prev_a = 3
-            if randomMove == 4:
-                build(agent_host,obs["XPos"],obs["YPos"],obs["ZPos"])
+            if randomMove == 4 :
+                teleport(agent_host,obs["XPos"],obs["YPos"],obs["ZPos"])
                 self.prev_a = 4
             self.prev_s = current_s
 
@@ -271,17 +335,26 @@ class TabQAgent(object):
 
     # do not change this function
     def drawQ(self, curr_x=None, curr_y=None):
-        scale = 50
-        world_x = 5
-        world_y = 5
-        if self.canvas is None or self.root is None:
+        scale = 30
+        world_x = 15
+        world_y = 15
+        if self.canvas is None or self.canvas2 is None or self.root is None:
             self.root = tk.Tk()
-            self.root.wm_title("Q-table")
+            self.root2 = tk.Tk()
+            self.root2.wm_title("Q-table")
+            self.root.wm_title('Q-table -- Power Up')
             self.canvas = tk.Canvas(self.root, width=world_x * scale, height=world_y * scale, borderwidth=0,
                                     highlightthickness=0, bg="black")
+            
+            self.canvas2 = tk.Canvas(self.root2, width=world_x * scale, height=world_y * scale, borderwidth=0,
+                                    highlightthickness=0, bg="black")
             self.canvas.grid()
+            self.canvas2.grid()
             self.root.update()
+            self.root2.update()
+
         self.canvas.delete("all")
+        self.canvas2.delete("all")
         action_inset = 0.1
         action_radius = 0.1
         curr_radius = 0.2
@@ -294,27 +367,46 @@ class TabQAgent(object):
                 s = "%d:%d" % (x, y)
                 self.canvas.create_rectangle(x * scale, y * scale, (x + 1) * scale, (y + 1) * scale, outline="#fff",
                                              fill="#002")
+                self.canvas2.create_rectangle(x * scale, y * scale, (x + 1) * scale, (y + 1) * scale, outline="#fff",
+                                             fill="#002")
+
                 for action in range(4):
                     if not s in self.q_table:
                         continue
                     value = self.q_table[s][action]
+                    value2 = self.q_table_powerup[s][action]
                     
                     color = int(255 * (value - min_value) / (max_value - min_value))  # map value to 0-255
+                    color2 = int(255 * (value2 - min_value) / (max_value - min_value))  # map value to 0-255
                     color = max(min(color, 255), 0)  # ensure within [0,255]
+                    color2 = max(min(color2, 255), 0)  # ensure within [0,255]
                     color_string = '#%02x%02x%02x' % (255 - color, color, 0)
+                    color_string2 = '#%02x%02x%02x' % (255 - color2, color2, 0)
                     self.canvas.create_oval((x + action_positions[action][0] - action_radius) * scale,
                                             (y + action_positions[action][1] - action_radius) * scale,
                                             (x + action_positions[action][0] + action_radius) * scale,
                                             (y + action_positions[action][1] + action_radius) * scale,
                                             outline=color_string, fill=color_string)
+                    self.canvas2.create_oval((x + action_positions[action][0] - action_radius) * scale,
+                                            (y + action_positions[action][1] - action_radius) * scale,
+                                            (x + action_positions[action][0] + action_radius) * scale,
+                                            (y + action_positions[action][1] + action_radius) * scale,
+                                            outline=color_string2, fill=color_string2)
+ 
         if curr_x is not None and curr_y is not None:
             self.canvas.create_oval((curr_x + 0.5 - curr_radius) * scale,
                                     (curr_y + 0.5 - curr_radius) * scale,
                                     (curr_x + 0.5 + curr_radius) * scale,
                                     (curr_y + 0.5 + curr_radius) * scale,
                                     outline="#fff", fill="#fff")
+            self.canvas2.create_oval((curr_x + 0.5 - curr_radius) * scale,
+                                    (curr_y + 0.5 - curr_radius) * scale,
+                                    (curr_x + 0.5 + curr_radius) * scale,
+                                    (curr_y + 0.5 + curr_radius) * scale,
+                                    outline="#fff", fill="#fff")
+ 
         self.root.update()
-
+        self.root2.update()
 
 if sys.version_info[0] == 2:
     sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)  # flush print output immediately
@@ -323,7 +415,9 @@ else:
 
     print = functools.partial(print, flush=True)
 
-agent = TabQAgent()
+agent = TabQAgent() 
+#agent.generate_food_blocks([10, 10, 10], [5, 5, 5],6, 0, 10, 5, 56, 3)
+
 agent_host = MalmoPython.AgentHost()
 try:
     agent_host.parse(sys.argv)
@@ -334,7 +428,7 @@ except RuntimeError as e:
 
 # -- set up the mission -- #
 
-mission_file = './final.xml'
+mission_file = './final.xml' 
 with open(mission_file, 'r') as f:
     print("Loading mission from %s" % mission_file)
     mission_xml = f.read()
@@ -342,21 +436,44 @@ with open(mission_file, 'r') as f:
 
 # add some random holes in the ground to spice things up
 
-
+ 
 for x in range(5, 12):
     my_mission.drawBlock(x,56,0,"ice")
     my_mission.drawBlock(x,56,6,"ice")
     my_mission.drawBlock(x, 61, 5, "ice")
     my_mission.drawBlock(x, 61, 11, "ice")
-    my_mission.drawBlock(x, 66, 9, "ice")
-    my_mission.drawBlock(x, 66, 15, "ice")
+    # my_mission.drawBlock(x, 66, 9, "ice")
+    # my_mission.drawBlock(x, 66, 15, "ice")
 
-my_mission.drawBlock(8,61,9,"lit_redstone_ore")
+first_level_y = 56
+second_level_y = 56 + 5 
+
+
+my_mission.drawBlock(6,first_level_y,1,"lit_redstone_ore")
+my_mission.drawBlock(8,first_level_y,5,"lit_redstone_ore")
+my_mission.drawBlock(9,first_level_y,4,"lit_redstone_ore")
+my_mission.drawBlock(10,first_level_y,1,"lit_redstone_ore")
+my_mission.drawBlock(9,first_level_y,3,"lit_redstone_ore")
+my_mission.drawBlock(6,first_level_y,2,"lit_redstone_ore")
+my_mission.drawBlock(8,first_level_y,4,"lit_redstone_ore")
+my_mission.drawBlock(9,first_level_y,1,"lit_redstone_ore")
+
+
+my_mission.drawBlock(6,second_level_y,6,"lit_redstone_ore")
+my_mission.drawBlock(10,second_level_y,10,"lit_redstone_ore")
+my_mission.drawBlock(7,second_level_y,8,"lit_redstone_ore")
+my_mission.drawBlock(9,second_level_y,9,"lit_redstone_ore")
+my_mission.drawBlock(6,second_level_y,7,"lit_redstone_ore")
+my_mission.drawBlock(8,second_level_y,6,"lit_redstone_ore")
+
+
+my_mission.drawBlock(9,second_level_y,5+5,"quartz_block")
+
 my_mission.drawBlock(8, 66, 9, "air")
 my_mission.drawBlock(8, 66, 5, "air")
 my_mission.drawBlock(8, 61, 5, "dirt")
-my_mission.drawBlock(7, 67, 10, "ice")
-my_mission.drawBlock(9, 67, 10, "ice")  
+# my_mission.drawBlock(7, 67, 10, "ice")
+# my_mission.drawBlock(9, 67, 10, "ice")  
 
 for z in range(1, 6):
     my_mission.drawBlock(5, 56, z, "ice")
@@ -366,9 +483,9 @@ for z in range(5, 12):
     my_mission.drawBlock(5, 61, z, "ice")
     my_mission.drawBlock(11, 61, z, "ice")
     
-for z in range(10, 15):
-    my_mission.drawBlock(5, 66, z, "ice")
-    my_mission.drawBlock(11, 66, z, "ice")
+# for z in range(10, 15):
+#     my_mission.drawBlock(5, 66, z, "ice")
+#     my_mission.drawBlock(11, 66, z, "ice")
 
 
     # for z in range(4, 12):
@@ -399,6 +516,7 @@ for i in range(num_repeats):
     my_mission_record = MalmoPython.MissionRecordSpec()
 
     for retry in range(max_retries):
+
         try:
             agent_host.startMission(my_mission, my_mission_record)
             break
