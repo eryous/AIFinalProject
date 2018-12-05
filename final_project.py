@@ -24,7 +24,7 @@ class TabQAgent(object):
     """Tabular Q-learning agent for discrete state/action spaces."""
 
     def __init__(self):
-
+        self.jumpH = 2
         self.epsilon = 0.05  # exploration rate
         self.alpha = 0.2     # learning rate
         self.gamma = 0.8  # reward discount factor
@@ -39,8 +39,9 @@ class TabQAgent(object):
         
 
 
-        self.actions = ["movenorth 1", "movesouth 1", "movewest 1", "moveeast 1"]
+        self.actions = ["movenorth 1", "movesouth 1", "movewest 1", "moveeast 1", "use 1"]
         self.q_table = {}
+        self.q_table_ladders = {}
         self.canvas = None
         self.root = None
 
@@ -65,8 +66,9 @@ class TabQAgent(object):
 
     def act(self, world_state, agent_host, current_r):
         obs_text = world_state.observations[-1].text
-        obs = json.loads(obs_text)  # most recent observation
-        self.logger.debug(obs)
+        obs = json.loads(obs_text)
+        # print(obs)  # most recent observation
+        # self.logger.debug(obs)
         if not u'XPos' in obs or not u'ZPos' in obs:
             self.logger.error("Incomplete observation received: %s" % obs_text)
             return 0
@@ -98,56 +100,86 @@ class TabQAgent(object):
             time.sleep(0.05)
 
 
-        def moveBack(ah):
+        def moveBack(ah):           
             ah.sendCommand("move -1")
             time.sleep(0.05)
 
+        def build(ah,x,y,z):
+            # ah.sendCommand("jump 1")
+            ah.sendCommand("chat /tp Rayys %d %d %d"%(x,y+self.jumpH,z))
+            # time.sleep(0.01)
+            ah.sendCommand("use 1")
+            ah.sendCommand("use 1")
+            ah.sendCommand("use 1")
+            ah.sendCommand("use 1")
+            ah.sendCommand("use 1")
+            ah.sendCommand("use 1")
+            ah.sendCommand("use 1")
+            time.sleep(1)
 
-        def legal(x, y):
+
+        def legal(x, z):
             LegalMoves = []
-            if y < 13:
+            if z < 6:
                 LegalMoves.append("up")
-            if y > 0:
+            if z > 1:
                 LegalMoves.append("down")
-            if x < 5:
-                LegalMoves.append("right")
-            if x > 0:
+            if x < 10:
                 LegalMoves.append("left")
+            if x > 6:
+                LegalMoves.append("right")
+            if x == 8.5 and z == 4.5:
+                print('x:',x,'z:',z)
+                LegalMoves.append("use")
             return LegalMoves
-
         p = current_s.split(":")
         xp = int(p[0])
         yp = int(p[1])
         
         legal = legal(xp, yp)
-    
-        if random.random() <= self.epsilon:
-            num = random.randint(0,3)
-            if num == 0: # up
+        self.logger.debug(legal)
+        # print(legal)
+        random_int = random.random()
+        # print(random_int)
+
+
+        if random_int <= self.epsilon:
+            num = random.randint(0,len(legal)-1)
+            action = legal[num]
+
+            print(action)
+            if action == "up": # up
+            
                 moveStraight(agent_host)
                 self.prev_a = 0
                 self.prev_s = current_s
-            if num == 1: # down
+            if action == 'down': # down
                 moveBack(agent_host)
                 self.prev_a = 1
                 self.prev_s = current_s 
-            if num == 2:# left
+            if action == 'left':# left
                 moveLeft(agent_host)
                 self.prev_a = 2
                 self.prev_s = current_s 
-            if num == 3: #right
+            if action == 'right': #right
                 moveRight(agent_host)
                 self.prev_a = 3
                 self.prev_s = current_s  
-
+            if action == 'use':
+                build(agent_host,obs["XPos"],obs["YPos"],obs["ZPos"])
+                self.prev_a = 4
+                self.prev_s = current_s  
+        
         else:
             valC = max(self.q_table[current_s])
             spots = []
             for i in range(len(self.q_table[current_s])):
                 if(self.q_table[current_s][i]==valC):
                     spots.append(i)
-
+            
             randomMove = random.choice(spots)
+            print('random move',randomMove)
+            
             if randomMove == 0: # up
                 moveStraight(agent_host)
                 self.prev_a = 0
@@ -160,7 +192,9 @@ class TabQAgent(object):
             if randomMove == 3: #right
                 moveRight(agent_host)
                 self.prev_a = 3
-            
+            if randomMove == 4:
+                build(agent_host,obs["XPos"],obs["YPos"],obs["ZPos"])
+                self.prev_a = 4
             self.prev_s = current_s
 
         return current_r
@@ -178,6 +212,7 @@ class TabQAgent(object):
 
         # TODO complete the main loop:
         world_state = agent_host.getWorldState()
+        print(world_state)
         while world_state.is_mission_running:
             current_r = 0
 
@@ -226,11 +261,6 @@ class TabQAgent(object):
         total_reward += current_r
 
         # update Q values
-
-
-        agent_host.sendCommand("use 1")
-        
-        
         if self.prev_s is not None and self.prev_a is not None:
             self.updateQTableFromTerminatingState(current_r, self.prev_s, self.prev_a)
 
@@ -242,8 +272,8 @@ class TabQAgent(object):
     # do not change this function
     def drawQ(self, curr_x=None, curr_y=None):
         scale = 50
-        world_x = 6
-        world_y = 14
+        world_x = 5
+        world_y = 5
         if self.canvas is None or self.root is None:
             self.root = tk.Tk()
             self.root.wm_title("Q-table")
@@ -314,16 +344,23 @@ with open(mission_file, 'r') as f:
 
 
 for x in range(5, 12):
+    my_mission.drawBlock(x,56,0,"ice")
+    my_mission.drawBlock(x,56,6,"ice")
     my_mission.drawBlock(x, 61, 5, "ice")
     my_mission.drawBlock(x, 61, 11, "ice")
     my_mission.drawBlock(x, 66, 9, "ice")
     my_mission.drawBlock(x, 66, 15, "ice")
 
-
+my_mission.drawBlock(8,61,9,"lit_redstone_ore")
 my_mission.drawBlock(8, 66, 9, "air")
 my_mission.drawBlock(8, 66, 5, "air")
+my_mission.drawBlock(8, 61, 5, "dirt")
 my_mission.drawBlock(7, 67, 10, "ice")
 my_mission.drawBlock(9, 67, 10, "ice")  
+
+for z in range(1, 6):
+    my_mission.drawBlock(5, 56, z, "ice")
+    my_mission.drawBlock(11, 56, z, "ice")
 
 for z in range(5, 12):
     my_mission.drawBlock(5, 61, z, "ice")
@@ -333,11 +370,11 @@ for z in range(10, 15):
     my_mission.drawBlock(5, 66, z, "ice")
     my_mission.drawBlock(11, 66, z, "ice")
 
-'''
-    for z in range(4, 12):
-        if (x < 5)
-            my_mission.drawBlock(x, 61, z, "water")
-'''
+
+    # for z in range(4, 12):
+    #     if (x < 5)
+    #         my_mission.drawBlock(x, 61, z, "water")
+
 
 
 max_retries = 3
@@ -394,6 +431,7 @@ print("Done.")
 
 print()
 print("Cumulative rewards for all %d runs:" % num_repeats)
+
 print(cumulative_rewards)
 
 

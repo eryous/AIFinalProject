@@ -13,12 +13,16 @@
         <Time><StartTime>1</StartTime></Time>
     </ServerInitialConditions>
     <ServerHandlers>
-      <!-- <FlatWorldGenerator generatorString="3;7,44*49,73,35:1,159:4,95:13,35:13,159:11,95:10,159:14,159:6,35:6,95:6;12;" forceReset="true"/> -->
-      <FlatWorldGenerator generatorString="3;7,44*49,73,35:1,159:4,95:13,35:13,159:11,95:10,159:14,159:6,35:6,95:6;12;"/>
+      <FlatWorldGenerator generatorString="3;7,44*49,73,35:1,159:4,95:13,35:13,159:11,95:10,159:14,159:6,35:6,95:6;12;" forceReset="true"/>
+      <!-- <FlatWorldGenerator generatorString="3;7,44*49,73,35:1,159:4,95:13,35:13,159:11,95:10,159:14,159:6,35:6,95:6;12;"/> -->
       <DrawingDecorator>
-        <DrawCuboid x1="5"  y1="61" z1="5"  x2="10" y2="61" z2="10" type="dirt" />
-        <DrawCuboid x1="6"  y1="66" z1="10"  x2="10" y2="66" z2="15" type="dirt" />
-        <DrawCuboid x1="8"  y1="61" z1="10"  x2="8" y2="66" z2="10" type="dirt" />
+        <DrawCuboid x1="6"  y1="56" z1="0"  x2="10" y2="56" z2="5" type="grass" />
+        <DrawCuboid x1="6"  y1="61" z1="5"  x2="10" y2="61" z2="10" type="grass" />
+        <!-- <DrawCuboid x1="6"  y1="66" z1="10"  x2="10" y2="66" z2="15" type="dirt" /> -->
+        <!-- columns -->
+        <!-- <DrawCuboid x1="8"  y1="61" z1="10"  x2="8" y2="66" z2="10" type="dirt" /> -->
+        <DrawCuboid x1="8"  y1="56" z1="5"  x2="8" y2="61" z2="5" type="grass" />
+        
         <!-- <DrawCuboid x1="9"  y1="61" z1="10"  x2="9" y2="65" z2="10" type="dirt" /> -->
         <!-- <DrawCuboid x1="7"  y1="61" z1="10"  x2="7" y2="65" z2="10" type="dirt" /> -->
 
@@ -28,20 +32,21 @@
      <!-- floor of the arena -->
 
       </DrawingDecorator>
-      <ServerQuitFromTimeUp timeLimitMs="20000000"/>
+      <ServerQuitFromTimeUp timeLimitMs="200000"/>
       <ServerQuitWhenAnyAgentFinishes/>
     </ServerHandlers>
   </ServerSection>
   <AgentSection mode="Creative">
     <Name>Rayys</Name>
     <AgentStart>
-      <Placement x="0" y="56.0" z="0" pitch="30" yaw="0"/>
+      <Placement x="8.5" y="57.0" z="4.5" pitch="90" yaw="0"/>
       <Inventory>
-          <InventoryItem slot="0" type="ladder" quantity="10"/>
-          <InventoryItem slot="1" type="painting" quantity="10"/>
+          <InventoryBlock slot="0" type="obsidian" quantity="10"/>
       </Inventory>
     </AgentStart>
     <AgentHandlers>
+      <ObservationFromChat />
+      <ChatCommands />
       <DiscreteMovementCommands/>
       <ObservationFromFullStats/>
       <RewardForTouchingBlockType>
