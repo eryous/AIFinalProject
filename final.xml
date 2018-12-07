@@ -52,6 +52,7 @@
       <RewardForTouchingBlockType>
         <Block reward="-100.0" type="ice" behaviour="onceOnly"/>
         <Block reward="100.0" type="quartz_block" behaviour="onceOnly"/>
+        <Block reward="50.0" type="lit_redstone_ore" behaviour="oncePerTimeSpan"/>
       </RewardForTouchingBlockType>
       <RewardForSendingCommand reward="-1" />
       <AgentQuitFromTouchingBlockType>

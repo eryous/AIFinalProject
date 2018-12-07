@@ -1,0 +1,41 @@
+Our final project for CS 4710 Artificaial intellegence is called 
+Malmo The teleporter
+
+problem definiton
+	The ability to traverse unknown terrain with optimal resource management
+	and engaging in Environments with multiple possible conflicting objectives
+The siginiicance of this project is...
+
+being able to implment an agent that can Learn an unknown environment with no prior knowledge
+	implementing Multi-Objective Q learning
+	being able to Dealing with Conflicting objectives
+
+In reinforcement learning using Q-learning,  dynamic  programming  
+is  used  to keep  track  of  states,  actions  and  associated reward  in  memory. 
+This is accomplished uisng a data structure called a q table.
+In single objective q learning, you are only required to have one q table to keep track
+of the rewards associated with achiving that objective. But in multi-objective q learning, 
+you will have different rewards associatied with acheiving each objective. One way to keep track
+of each of these would be to have a seperate q taBLE for each objective
+
+The map that we wanted our agent to solve, was a two-tiered, five-by-five grid map. 
+The walls of the grid,are surrounded by blocks of ice, representing terminating states
+for the agent. If the agent touches an ice block, it receives
+a negative reward, and must start over. The main objective of the agent is to find the quartz block
+ located at the top of the map. 
+The agent begins with 100 points of health. Each time the agent moves, it loses 5 points of health.
+ If the agent's health drops below 75, the agent must recharge its health at a redstone block,
+before continuing to search for quartz block. The ultimate goal of the agent is to be able to
+find the final
+goal block while still maintaining an adequate amount of health.
+
+To solve this problem, we employed a hueristic based algorithm, employing two different q-tables;
+one maintaining
+the rewards for goal block, and one maintaining the rewards for the redstone blocks. If the agent
+had an adequate amount of health, it would make decisions based on the first q-table in order to
+reinforce the quickest path to the destination block. If the agent began to run low on health, it
+would switch to using the the second q table to find the closest redstone blocks, so that it could
+recharge its health before continuing its search for the destination block. 
+As is shown, the agent does not have enough health to reach the destination block, without running
+out. Hence, it must deviate from the optimal path, in order to recharge, before reaching the
+destination block.    

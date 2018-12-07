@@ -26,6 +26,7 @@ class TabQAgent(object):
     """Tabular Q-learning agent for discrete state/action spaces."""
 
     def __init__(self):
+        self.health = 100
         self.powerUps = [(6,first_level_y,1),(8,first_level_y,5),(9,first_level_y,4),(10,first_level_y,1),(9,first_level_y,3),(6,first_level_y,2),(8,first_level_y,4),(9,first_level_y,1)]
         self.jumpH = 5
         self.epsilon = 0.05  # exploration rate
@@ -101,26 +102,41 @@ class TabQAgent(object):
         curr_Q =  max(table[current_state])
         prev_Q = table[prev_state][prev_a]
         average_Q = a * (r + (g * curr_Q)) + (1-a) * prev_Q
-        print(average_Q)
+        # print(average_Q)
         table[prev_state][prev_a] = average_Q
         return
     
     def updateQTable(self, reward, current_state, prev_state, prev_a):
-        self.updateQTable_general(reward, current_state, prev_state,  prev_a, self.q_table)
+        # print("reward from the update function: ",reward)
+        self.health -= 5
+        print("healthy healthy boo: ", self.health)
+        if reward == 49 :#and self.health <= 50:
+            self.updateQTable_general(reward, current_state, prev_state,  prev_a, self.q_table_powerup)
+            # self.health = 100
+            self.health = 100
+        else:
+            self.updateQTable_general(reward, current_state, prev_state,  prev_a, self.q_table)
 
+    '''
     def updatePowerUpTable(self, reward, current_state, prev_state, prev_a):
         self.updateQTable_general(reward, current_state, prev_state,  prev_a, self.q_table_powerup)
-
+    '''
     ### Change q_table to reflect what we have learnt upon reaching the terminal state.
     # Input: reward - int, prev_state - coordinate tuple, prev_a - int
     # Output: updated q_table
     def updateQTableFromTerminatingState(self, reward, prev_state, prev_a):
-        if reward > 0:
+        # print("The reward: ", reward)
+        self.health = 100
+        # if reward == 49:    
+        #     # if self.health <= 50:
+        #     self.q_table_powerup[prev_state][prev_a] = 50
+
+        if reward > 90:
             self.q_table[prev_state][prev_a] = 100
-            self.q_table_powerup[prev_state][prev_a] = 50
+                # self.health = 100
         if reward <= -100:
             self.q_table[prev_state][prev_a] = -100
-            self.q_table_powerup[prev_state][prev_a] = -50
+            self.q_table_powerup[prev_state][prev_a] = -100
 
         self.powerUps = [(6,first_level_y,1),(8,first_level_y,5),(9,first_level_y,4),(10,first_level_y,1),(9,first_level_y,3),(6,first_level_y,2),(8,first_level_y,4),(9,first_level_y,1)]
 
@@ -145,15 +161,19 @@ class TabQAgent(object):
         if self.prev_s is not None and self.prev_a is not None:
             self.updateQTable(current_r, current_s, self.prev_s, self.prev_a)
 
+        if self.health <= 0:
+            agent_host.sendCommand("chat /tp Rayys %d %d %d"%(8.5,57.0,1.5))#if not at the pillar position but still wants to jump, teleport to ice to kill itself
+            self.health = 100
+
         self.drawQ(curr_x=int(obs[u'XPos']), curr_y=int(obs[u'ZPos']))
         
 
         cur_pos = (int(obs[u'XPos']),int(obs[u'YPos'])-1,int(obs[u'ZPos']))
-        print("current position: ",cur_pos)
-        print("POwer ups: ",self.powerUps)
+        # print("current position: ",cur_pos)
+        # print("POwer ups: ",self.powerUps)
         if cur_pos in self.powerUps:
             self.powerUps.remove(cur_pos)
-        print("POwer ups: ",self.powerUps)
+        # print("POwer ups: ",self.powerUps)
 
             
 
@@ -185,7 +205,7 @@ class TabQAgent(object):
             if z < 6:
                 LegalMoves.append("up")
             if x == 8.5 and z == 4.5:
-                print('x:',x,'z:',z)
+                # print('x:',x,'z:',z)
                 LegalMoves.append("teleport")
             if z > 1:
                 LegalMoves.append("down")
@@ -209,7 +229,7 @@ class TabQAgent(object):
             num = random.randint(0,len(legal)-1)
             action = legal[num]
 
-            print(action)
+            # print(action)
             if action == "up": # up
                 moveStraight(agent_host)
                 self.prev_a = 0
@@ -223,26 +243,31 @@ class TabQAgent(object):
                 moveRight(agent_host)
                 self.prev_a = 3
             if action == 'teleport':
-                print("random jump", obs["XPos"],obs["YPos"],obs["ZPos"])
+                # print("random jump", obs["XPos"],obs["YPos"],obs["ZPos"])
                 teleport(agent_host,obs["XPos"],obs["YPos"],obs["ZPos"])
                 self.prev_a = 4
             self.prev_s = current_s
         else:
-            print(self.q_table[current_s])
-                
-            sorted_spots = sorted(self.q_table[current_s])
+            # print(self.q_table[current_s])
+            table = dict()
+            if self.health <= 75:
+                table = self.q_table_powerup
+            else:
+                table = self.q_table
+            # print(table)
+            sorted_spots = sorted(table[current_s])
             valC = sorted_spots[-1]
 
             spots = []
-            for i in range(len(self.q_table[current_s])):
-                if (self.q_table[current_s][i]==valC):
+            for i in range(len(table[current_s])):
+                if (table[current_s][i]==valC):
                     spots.append(i)
 
 
-            print(spots)
+            # print(spots)
             
             randomMove = random.choice(spots)
-            print('random move',randomMove)
+            # print('random move',randomMove)
             
             if randomMove == 0: # up
                 moveStraight(agent_host)
@@ -276,7 +301,7 @@ class TabQAgent(object):
 
         # TODO complete the main loop:
         world_state = agent_host.getWorldState()
-        print(world_state)
+        # print(world_state)
         while world_state.is_mission_running:
             current_r = 0
 
@@ -341,8 +366,8 @@ class TabQAgent(object):
         if self.canvas is None or self.canvas2 is None or self.root is None:
             self.root = tk.Tk()
             self.root2 = tk.Tk()
-            self.root2.wm_title("Q-table")
-            self.root.wm_title('Q-table -- Power Up')
+            self.root2.wm_title("Q-table -- Power Up")
+            self.root.wm_title('Q-table')
             self.canvas = tk.Canvas(self.root, width=world_x * scale, height=world_y * scale, borderwidth=0,
                                     highlightthickness=0, bg="black")
             
@@ -449,25 +474,25 @@ first_level_y = 56
 second_level_y = 56 + 5 
 
 
-my_mission.drawBlock(6,first_level_y,1,"lit_redstone_ore")
-my_mission.drawBlock(8,first_level_y,5,"lit_redstone_ore")
-my_mission.drawBlock(9,first_level_y,4,"lit_redstone_ore")
-my_mission.drawBlock(10,first_level_y,1,"lit_redstone_ore")
+# my_mission.drawBlock(6,first_level_y,1,"lit_redstone_ore")
+# my_mission.drawBlock(8,first_level_y,5,"lit_redstone_ore")
+# my_mission.drawBlock(9,first_level_y,4,"lit_redstone_ore")
+# my_mission.drawBlock(10,first_level_y,1,"lit_redstone_ore")
+# my_mission.drawBlock(9,first_level_y,3,"lit_redstone_ore")
+# my_mission.drawBlock(6,first_level_y,2,"lit_redstone_ore")
+my_mission.drawBlock(6,first_level_y,3,"lit_redstone_ore")
 my_mission.drawBlock(9,first_level_y,3,"lit_redstone_ore")
-my_mission.drawBlock(6,first_level_y,2,"lit_redstone_ore")
-my_mission.drawBlock(8,first_level_y,4,"lit_redstone_ore")
-my_mission.drawBlock(9,first_level_y,1,"lit_redstone_ore")
 
 
 my_mission.drawBlock(6,second_level_y,6,"lit_redstone_ore")
-my_mission.drawBlock(10,second_level_y,10,"lit_redstone_ore")
-my_mission.drawBlock(7,second_level_y,8,"lit_redstone_ore")
-my_mission.drawBlock(9,second_level_y,9,"lit_redstone_ore")
-my_mission.drawBlock(6,second_level_y,7,"lit_redstone_ore")
-my_mission.drawBlock(8,second_level_y,6,"lit_redstone_ore")
+# my_mission.drawBlock(10,second_level_y,10,"lit_redstone_ore")
+# my_mission.drawBlock(7,second_level_y,8,"lit_redstone_ore")
+# my_mission.drawBlock(9,second_level_y,9,"lit_redstone_ore")
+# my_mission.drawBlock(6,second_level_y,7,"lit_redstone_ore")
+# my_mission.drawBlock(8,second_level_y,6,"lit_redstone_ore")
 
 
-my_mission.drawBlock(9,second_level_y,5+5,"quartz_block")
+my_mission.drawBlock(9,second_level_y,5+2,"quartz_block")
 
 my_mission.drawBlock(8, 66, 9, "air")
 my_mission.drawBlock(8, 66, 5, "air")
@@ -496,7 +521,7 @@ for z in range(5, 12):
 
 max_retries = 3
 
-num_repeats = 150
+num_repeats = 300
 
 cumulative_rewards = []
 
