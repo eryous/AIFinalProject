@@ -102,17 +102,13 @@ class TabQAgent(object):
         curr_Q =  max(table[current_state])
         prev_Q = table[prev_state][prev_a]
         average_Q = a * (r + (g * curr_Q)) + (1-a) * prev_Q
-        # print(average_Q)
         table[prev_state][prev_a] = average_Q
         return
     
     def updateQTable(self, reward, current_state, prev_state, prev_a):
-        # print("reward from the update function: ",reward)
         self.health -= 5
-        print("healthy healthy boo: ", self.health)
         if reward == 49 :#and self.health <= 50:
             self.updateQTable_general(reward, current_state, prev_state,  prev_a, self.q_table_powerup)
-            # self.health = 100
             self.health = 100
         else:
             self.updateQTable_general(reward, current_state, prev_state,  prev_a, self.q_table)
@@ -125,15 +121,10 @@ class TabQAgent(object):
     # Input: reward - int, prev_state - coordinate tuple, prev_a - int
     # Output: updated q_table
     def updateQTableFromTerminatingState(self, reward, prev_state, prev_a):
-        # print("The reward: ", reward)
         self.health = 100
-        # if reward == 49:    
-        #     # if self.health <= 50:
-        #     self.q_table_powerup[prev_state][prev_a] = 50
 
         if reward > 90:
             self.q_table[prev_state][prev_a] = 100
-                # self.health = 100
         if reward <= -100:
             self.q_table[prev_state][prev_a] = -100
             self.q_table_powerup[prev_state][prev_a] = -100
@@ -146,8 +137,6 @@ class TabQAgent(object):
     def act(self, world_state, agent_host, current_r):
         obs_text = world_state.observations[-1].text
         obs = json.loads(obs_text)
-        # print(obs)  # most recent observation
-        # self.logger.debug(obs)
         if not u'XPos' in obs or not u'ZPos' in obs:
             self.logger.error("Incomplete observation received: %s" % obs_text)
             return 0
@@ -162,41 +151,33 @@ class TabQAgent(object):
             self.updateQTable(current_r, current_s, self.prev_s, self.prev_a)
 
         if self.health <= 0:
-            agent_host.sendCommand("chat /tp Rayys %d %d %d"%(8.5,57.0,1.5))#if not at the pillar position but still wants to jump, teleport to ice to kill itself
+            agent_host.sendCommand("chat /tp Rayys %d %d %d"%(8.5,57.0,1.5))#if not at the pillar position but still wants to jump, teleport to ice to start next genetation
             self.health = 100
 
         self.drawQ(curr_x=int(obs[u'XPos']), curr_y=int(obs[u'ZPos']))
         
 
         cur_pos = (int(obs[u'XPos']),int(obs[u'YPos'])-1,int(obs[u'ZPos']))
-        # print("current position: ",cur_pos)
-        # print("POwer ups: ",self.powerUps)
         if cur_pos in self.powerUps:
             self.powerUps.remove(cur_pos)
-        # print("POwer ups: ",self.powerUps)
 
             
 
         def moveRight(ah):
             ah.sendCommand("strafe 1")
-            # time.sleep(0.1)
         def moveLeft(ah):
             ah.sendCommand("strafe -1")
-            # time.sleep(0.1)
         def moveStraight(ah):
             ah.sendCommand("move 1")
-            # time.sleep(0.1)
         def moveBack(ah):           
             ah.sendCommand("move -1")
-            # time.sleep(0.1)
     
         def teleport(ah,x,y,z):
-            # ah.sendCommand("move -1")
             if x == 8.5 and z == 4.5:
                 ah.sendCommand("chat /tp Rayys %d %d %d"%(x,y+self.jumpH,z+1))
                 time.sleep(1)
             else:
-                ah.sendCommand("chat /tp Rayys %d %d %d"%(10,57,6))#if not at the pillar position but still wants to jump, teleport to ice to kill itself
+                ah.sendCommand("chat /tp Rayys %d %d %d"%(10,57,6)) #if not at the pillar position but still wants to jump, teleport to ice to start next genetation
                 time.sleep(1)
 
 
@@ -205,7 +186,6 @@ class TabQAgent(object):
             if z < 6:
                 LegalMoves.append("up")
             if x == 8.5 and z == 4.5:
-                # print('x:',x,'z:',z)
                 LegalMoves.append("teleport")
             if z > 1:
                 LegalMoves.append("down")
@@ -220,16 +200,13 @@ class TabQAgent(object):
         
         legal = legal(xp, yp)
         self.logger.debug(legal)
-        # print(legal)
         random_int = random.random()
-        # print(self.q_table)
 
 
         if random_int <= self.epsilon:
             num = random.randint(0,len(legal)-1)
             action = legal[num]
 
-            # print(action)
             if action == "up": # up
                 moveStraight(agent_host)
                 self.prev_a = 0
@@ -243,18 +220,15 @@ class TabQAgent(object):
                 moveRight(agent_host)
                 self.prev_a = 3
             if action == 'teleport':
-                # print("random jump", obs["XPos"],obs["YPos"],obs["ZPos"])
                 teleport(agent_host,obs["XPos"],obs["YPos"],obs["ZPos"])
                 self.prev_a = 4
             self.prev_s = current_s
         else:
-            # print(self.q_table[current_s])
             table = dict()
             if self.health <= 75:
                 table = self.q_table_powerup
             else:
                 table = self.q_table
-            # print(table)
             sorted_spots = sorted(table[current_s])
             valC = sorted_spots[-1]
 
@@ -264,10 +238,8 @@ class TabQAgent(object):
                     spots.append(i)
 
 
-            # print(spots)
             
             randomMove = random.choice(spots)
-            # print('random move',randomMove)
             
             if randomMove == 0: # up
                 moveStraight(agent_host)
@@ -301,7 +273,6 @@ class TabQAgent(object):
 
         # TODO complete the main loop:
         world_state = agent_host.getWorldState()
-        # print(world_state)
         while world_state.is_mission_running:
             current_r = 0
 
@@ -441,7 +412,6 @@ else:
     print = functools.partial(print, flush=True)
 
 agent = TabQAgent() 
-#agent.generate_food_blocks([10, 10, 10], [5, 5, 5],6, 0, 10, 5, 56, 3)
 
 agent_host = MalmoPython.AgentHost()
 try:
@@ -467,29 +437,17 @@ for x in range(5, 12):
     my_mission.drawBlock(x,56,6,"ice")
     my_mission.drawBlock(x, 61, 5, "ice")
     my_mission.drawBlock(x, 61, 11, "ice")
-    # my_mission.drawBlock(x, 66, 9, "ice")
-    # my_mission.drawBlock(x, 66, 15, "ice")
+
 
 first_level_y = 56
 second_level_y = 56 + 5 
 
 
-# my_mission.drawBlock(6,first_level_y,1,"lit_redstone_ore")
-# my_mission.drawBlock(8,first_level_y,5,"lit_redstone_ore")
-# my_mission.drawBlock(9,first_level_y,4,"lit_redstone_ore")
-# my_mission.drawBlock(10,first_level_y,1,"lit_redstone_ore")
-# my_mission.drawBlock(9,first_level_y,3,"lit_redstone_ore")
-# my_mission.drawBlock(6,first_level_y,2,"lit_redstone_ore")
 my_mission.drawBlock(6,first_level_y,3,"lit_redstone_ore")
 my_mission.drawBlock(9,first_level_y,3,"lit_redstone_ore")
 
 
 my_mission.drawBlock(6,second_level_y,6,"lit_redstone_ore")
-# my_mission.drawBlock(10,second_level_y,10,"lit_redstone_ore")
-# my_mission.drawBlock(7,second_level_y,8,"lit_redstone_ore")
-# my_mission.drawBlock(9,second_level_y,9,"lit_redstone_ore")
-# my_mission.drawBlock(6,second_level_y,7,"lit_redstone_ore")
-# my_mission.drawBlock(8,second_level_y,6,"lit_redstone_ore")
 
 
 my_mission.drawBlock(9,second_level_y,5+2,"quartz_block")
@@ -497,8 +455,6 @@ my_mission.drawBlock(9,second_level_y,5+2,"quartz_block")
 my_mission.drawBlock(8, 66, 9, "air")
 my_mission.drawBlock(8, 66, 5, "air")
 my_mission.drawBlock(8, 61, 5, "dirt")
-# my_mission.drawBlock(7, 67, 10, "ice")
-# my_mission.drawBlock(9, 67, 10, "ice")  
 
 for z in range(1, 6):
     my_mission.drawBlock(5, 56, z, "ice")
@@ -507,15 +463,6 @@ for z in range(1, 6):
 for z in range(5, 12):
     my_mission.drawBlock(5, 61, z, "ice")
     my_mission.drawBlock(11, 61, z, "ice")
-    
-# for z in range(10, 15):
-#     my_mission.drawBlock(5, 66, z, "ice")
-#     my_mission.drawBlock(11, 66, z, "ice")
-
-
-    # for z in range(4, 12):
-    #     if (x < 5)
-    #         my_mission.drawBlock(x, 61, z, "water")
 
 
 
